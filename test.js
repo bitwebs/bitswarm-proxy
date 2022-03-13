@@ -1,24 +1,24 @@
 const test = require('tape')
 const crypto = require('crypto')
 const DuplexPair = require('duplexpair')
-const hyperswarm = require('@hyperswarm/network')
-const hypercoreProtocol = require('hypercore-protocol')
-const hypercore = require('hypercore')
+const bitswarm = require('@web4/network')
+const bitProtocol = require('@web4/bit-protocol')
+const unichain = require('@web4/unichain')
 const RAM = require('random-access-memory')
 const net = require('net')
 
-const HyperswarmProxyServer = require('./server')
-const HyperswarmProxyClient = require('./client')
+const BitswarmProxyServer = require('./server')
+const BitswarmProxyClient = require('./client')
 
 test('discover and make connections', (t) => {
   // Each test should use a different topic to avoid connecting to other machines running the test
-  const TEST_TOPIC = makeTopic('HYPERSWARM-PROXY-TEST' + Math.random())
+  const TEST_TOPIC = makeTopic('BITSWARM-PROXY-TEST' + Math.random())
   const TEST_MESSAGE = 'Hello World'
 
   t.plan(4)
 
-  const server = new HyperswarmProxyServer()
-  const network = hyperswarm({
+  const server = new BitswarmProxyServer()
+  const network = bitswarm({
     socket: (socket) => {
       t.pass('got connection to peer')
       socket.on('data', () => {
@@ -50,7 +50,7 @@ test('discover and make connections', (t) => {
 
   server.handleStream(serverSocket)
 
-  const client = new HyperswarmProxyClient({
+  const client = new BitswarmProxyClient({
     connection: clientSocket
   })
 
@@ -70,9 +70,9 @@ test('discover and make connections', (t) => {
 })
 
 test('handle incoming connections', (t) => {
-  const core = hypercore(RAM)
+  const chain = unichain(RAM)
 
-  const server = new HyperswarmProxyServer({
+  const server = new BitswarmProxyServer({
     handleIncoming
   })
   const fakeServer = net.createServer()
@@ -98,7 +98,7 @@ test('handle incoming connections', (t) => {
 
   function handleIncoming (socket) {
     t.pass('got incoming connection')
-    const stream = hypercoreProtocol({
+    const stream = bitProtocol({
       live: true,
       encrypt: true
     })
@@ -106,7 +106,7 @@ test('handle incoming connections', (t) => {
     socket.pipe(stream).pipe(socket)
 
     stream.once('feed', (topic) => {
-      t.deepEqual(topic, core.discoveryKey, 'got expected topic')
+      t.deepEqual(topic, chain.discoveryKey, 'got expected topic')
       stream.destroy()
       fakeServer.listen(0, () => {
         const port = fakeServer.address().port
@@ -119,19 +119,19 @@ test('handle incoming connections', (t) => {
   const { socket1: serverSocket, socket2: clientSocket } = new DuplexPair()
   server.handleStream(serverSocket)
 
-  const client = new HyperswarmProxyClient({
+  const client = new BitswarmProxyClient({
     connection: clientSocket
   })
 
   client.once('connection', (connection, info) => {
-    t.deepEqual(info.peer.topic, core.discoveryKey, 'got connection in client')
+    t.deepEqual(info.peer.topic, chain.discoveryKey, 'got connection in client')
     t.end()
 
     cleanup()
   })
 
-  core.ready(() => {
-    client.join(core.discoveryKey)
+  chain.ready(() => {
+    client.join(chain.discoveryKey)
 
     setTimeout(makeIncomingConnection, 500)
   })
@@ -140,7 +140,7 @@ test('handle incoming connections', (t) => {
     const port = server.network.tcp.address().port
 
     const socket = net.connect(port)
-    const stream = core.replicate()
+    const stream = chain.replicate()
 
     stream.on('error', () => {
       // whatever

@@ -1,15 +1,15 @@
 const { EventEmitter } = require('events')
 const os = require('os')
-const hyperswarm = require('@hyperswarm/network')
-const HyperswarmProxyStream = require('./')
+const bitswarm = require('@web4/network')
+const BitswarmProxyStream = require('./')
 
-module.exports = class HyperswarmProxyServer extends EventEmitter {
+module.exports = class BitswarmProxyServer extends EventEmitter {
   constructor (opts = {}) {
     super()
     const {
       bootstrap,
       ephemeral,
-      network = hyperswarm({
+      network = bitswarm({
         bootstrap,
         ephemeral,
         socket: (socket) => this.handleIncoming(socket),
@@ -83,7 +83,7 @@ module.exports = class HyperswarmProxyServer extends EventEmitter {
   }
 }
 
-class Client extends HyperswarmProxyStream {
+class Client extends BitswarmProxyStream {
   constructor (stream, network, shouldAnnounce) {
     super(stream)
 
